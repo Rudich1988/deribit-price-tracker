@@ -121,7 +121,7 @@ class BaseHTTPClient:
             return None
 
     def _retry_wait(self) -> wait_base:
-        return wait_exponential_jitter(initial=0.5, max=3)
+        return wait_exponential_jitter(multiplier=0.5, max=3)
 
     def _log_retry(self, retry_state: RetryCallState) -> None:
         self._logger.warning(

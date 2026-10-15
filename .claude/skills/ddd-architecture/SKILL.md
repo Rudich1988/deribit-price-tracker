@@ -103,9 +103,13 @@ Absence of global variables is an evaluation criterion of the task. Be strict.
   once by `setup_logging(config)` (`core/logging.py`).
 - Allowed at module level: declarations only — classes, functions, enums,
   ORM models, `router = APIRouter(...)`.
-- The Celery app is built by a factory as well. The way it is exposed to
-  the `celery` CLI is decided at implementation time and explained in the
-  README "Design decisions" section.
+- The Celery app is built by `create_celery_app(config)`. There is no
+  module-level `Celery()` for `celery -A`: run the CLI through
+  `python -m deribit_price_tracker.worker <celery args>`.
+- Celery tasks are entry points, like routers: a job class in
+  `<domain>/tasks.py` wires the dependencies and calls one service method.
+  It has a `register(app)` method that registers a closure (not a bound
+  method) and its beat schedule entry.
 
 ## Import rules
 

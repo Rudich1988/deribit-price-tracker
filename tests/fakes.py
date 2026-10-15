@@ -5,6 +5,13 @@ from typing import Any
 
 from aiohttp import web
 
+from deribit_price_tracker.prices.dto import (
+    IndexPriceDTO,
+    PriceDTO,
+    PricePeriodDTO,
+    Ticker,
+)
+
 
 @dataclass(frozen=True)
 class FakeResponse:
@@ -43,3 +50,29 @@ class FakeAPI:
             text=response.body,
             content_type="application/json",
         )
+
+
+class FakePriceRepository:
+    """In-memory stand-in for PriceRepository."""
+
+    def __init__(self, prices: list[PriceDTO] | None = None) -> None:
+        self.prices = prices or []
+
+    async def add_one(self, data: IndexPriceDTO) -> PriceDTO:
+        saved = PriceDTO(id=len(self.prices) + 1, **vars(data))
+        self.prices.append(saved)
+        return saved
+
+    async def get_all(self, ticker: Ticker) -> list[PriceDTO]:
+        return [p for p in self.prices if p.ticker == ticker]
+
+    async def get_latest(self, ticker: Ticker) -> PriceDTO | None:
+        prices = await self.get_all(ticker)
+        return max(prices, key=lambda p: p.timestamp, default=None)
+
+    async def get_by_period(self, period: PricePeriodDTO) -> list[PriceDTO]:
+        return [
+            p
+            for p in await self.get_all(period.ticker)
+            if period.start <= p.timestamp < period.end
+        ]

@@ -50,5 +50,29 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  worker:
+    # Celery worker with embedded beat (--beat): one process schedules and
+    # runs the task. Scale the worker only after moving beat out of it,
+    # otherwise each copy schedules its own task runs.
+    image: deribit-price-tracker:latest
+    pull_policy: never
+    env_file: .env
+    command:
+      - python
+      - -m
+      - deribit_price_tracker.worker
+      - worker
+      - --beat
+      - --concurrency=1
+      # The app user cannot write to /app, beat keeps its state in /tmp.
+      - --schedule=/tmp/celerybeat-schedule
+      - --loglevel=INFO
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   postgres_data:

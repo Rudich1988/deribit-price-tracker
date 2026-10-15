@@ -1,11 +1,5 @@
-import os
-from collections.abc import AsyncIterator
 from decimal import Decimal
 
-import pytest
-from sqlalchemy import text
-
-from deribit_price_tracker.db.base import ModelBase
 from deribit_price_tracker.db.database import Database
 from deribit_price_tracker.prices.dto import (
     IndexPriceDTO,
@@ -14,20 +8,6 @@ from deribit_price_tracker.prices.dto import (
     Ticker,
 )
 from deribit_price_tracker.prices.repositories import PriceRepository
-
-
-@pytest.fixture
-async def database() -> AsyncIterator[Database]:
-    url = os.getenv("TEST_DATABASE_URL")
-    if not url:
-        pytest.skip("TEST_DATABASE_URL is not set")
-    database = Database(url)
-    async with database.session() as session:
-        connection = await session.connection()
-        await connection.run_sync(ModelBase.metadata.create_all)
-        await session.execute(text("TRUNCATE prices RESTART IDENTITY"))
-    yield database
-    await database.dispose()
 
 
 async def add_prices(database: Database, *prices: IndexPriceDTO) -> None:
