@@ -4,7 +4,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from deribit_price_tracker.config.base import Config
+from deribit_price_tracker.core.handlers import AppErrorHandler
 from deribit_price_tracker.core.logging import setup_logging
+from deribit_price_tracker.core.middlewares import (
+    RequestLoggingMiddleware,
+    UnhandledErrorMiddleware,
+)
 from deribit_price_tracker.db.database import Database
 
 
@@ -20,5 +25,10 @@ def create_app() -> FastAPI:
         await database.dispose()
 
     app = FastAPI(title="Deribit Price Tracker", lifespan=lifespan)
+    AppErrorHandler().register(app)
+    # The last added middleware is the outermost: logging sees the final
+    # status, including the 500 produced by UnhandledErrorMiddleware.
+    app.add_middleware(UnhandledErrorMiddleware)
+    app.add_middleware(RequestLoggingMiddleware)
 
     return app
