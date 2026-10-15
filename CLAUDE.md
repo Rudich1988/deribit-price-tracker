@@ -8,6 +8,8 @@ Early-stage scaffold of a Deribit price tracker: a FastAPI service that will fet
 
 ## Commands
 
+The `Makefile` wraps the commands below. Run `make help` to list its targets. The most used are `make check` (lint + tests without DB), `make test-db` (all tests against docker Postgres, creating `prices_test` if needed), `make up` / `make down`, `make logs SERVICE=worker`, `make migration NAME="..."` and `make migrate`. Recipes that need credentials read `.env` at run time and build the host DB URL (`localhost:${POSTGRES_HOST_PORT:-5433}`) themselves.
+
 Dependencies are managed with Poetry (Python >= 3.12, src layout, venv in `.venv/`).
 
 ```bash
