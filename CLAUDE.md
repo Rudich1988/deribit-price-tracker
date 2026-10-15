@@ -19,11 +19,21 @@ poetry run ruff check .                          # lint (add --fix to autofix)
 poetry run ruff format .                         # format
 ```
 
+Docker (`Dockerfile` + `docker-compose.yml`, secrets only from `.env`):
+
+```bash
+docker compose up -d --build                     # db, redis, app on :8000
+docker compose logs -f app
+docker compose down                              # add -v to drop the database volume
+```
+
+Postgres is also published on `127.0.0.1:${POSTGRES_HOST_PORT:-5433}` for running migrations and DB tests from the host. Port 5432 is taken by a local Postgres. In `.env` the `DATABASE_URL` host is `db` (the compose service). From the host, use `localhost:5433` instead.
+
 Ruff is configured in `pyproject.toml` with a **max line length of 80** and rule sets E, W, F, I (import sorting), B, UP.
 
 ## Configuration
 
-`Config.from_env()` (`config/base.py`) calls `load_dotenv()` and reads `.env` (template: `.env.example`). `DATABASE_URL` is required and must use the `postgresql+asyncpg://` driver. `REDIS_URL` and `DERIBIT_BASE_URL` have defaults. `DEBUG` (`1`/`true`/`yes`, default false) becomes `Config.debug` and is passed as `echo` to `Database`, which turns on SQL logging. `LOG_LEVEL` (default `INFO`) sets the root log level in `setup_logging()` (`core/logging.py`), which `create_app()` calls first. The default hostnames (`db`, `redis`) assume Docker Compose service names. No compose file exists yet, so for local runs point them at `localhost`.
+`Config.from_env()` (`config/base.py`) calls `load_dotenv()` and reads `.env` (template: `.env.example`). `DATABASE_URL` is required and must use the `postgresql+asyncpg://` driver. `REDIS_URL` and `DERIBIT_BASE_URL` have defaults. `DEBUG` (`1`/`true`/`yes`, default false) becomes `Config.debug` and is passed as `echo` to `Database`, which turns on SQL logging. `LOG_LEVEL` (default `INFO`) sets the root log level in `setup_logging()` (`core/logging.py`), which `create_app()` calls first. The default hostnames (`db`, `redis`) are the Docker Compose service names.
 
 ## Architecture
 
