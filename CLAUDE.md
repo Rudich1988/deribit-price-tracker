@@ -30,7 +30,7 @@ docker compose logs -f app
 docker compose down                              # add -v to drop the database volume
 ```
 
-Compose runs a one-shot `migrate` service (`alembic upgrade head`) before `app` starts. app, migrate and worker share the image `deribit-price-tracker:latest`, built only by `app`. Every long-running service has a healthcheck: app polls `GET /health` (python urllib, there is no curl in the slim image), worker runs `inspect ping` against itself. `--wait` blocks until all are healthy. `/health` is excluded from request logging, and uvicorn runs with `--no-access-log`, because `RequestLoggingMiddleware` already logs every request.
+Compose runs a one-shot `migrate` service (`alembic upgrade head`) before `app` starts. app, migrate and worker share the image `deribit-price-tracker:latest`, built only by `app`. Every long-running service has a healthcheck: app checks that port 8000 accepts TCP connections (python socket, there is no curl in the slim image), worker runs `inspect ping` against itself. `--wait` blocks until all are healthy. There is no `/health` endpoint: it is not in the task spec, so don't add endpoints beyond the spec. uvicorn runs with `--no-access-log`, because `RequestLoggingMiddleware` already logs every request.
 
 Migrations (async Alembic, `migrations/`). `env.py` reads `DATABASE_URL` from `Config`, never from `alembic.ini`. From the host, point it at the published port:
 

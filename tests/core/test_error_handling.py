@@ -81,26 +81,3 @@ def test_framework_http_errors_are_untouched(client: TestClient) -> None:
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Not Found"}
-
-
-def test_health_endpoint_answers_ok(client: TestClient) -> None:
-    response = client.get("/health")
-
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
-
-
-def test_health_requests_are_not_logged(
-    client: TestClient, caplog: pytest.LogCaptureFixture
-) -> None:
-    client.get("/health")
-    client.get("/missing")  # logged, proves the logger is captured at all
-
-    middleware_records = [
-        r
-        for r in caplog.records
-        if r.name == "deribit_price_tracker.core.middlewares"
-    ]
-    assert [r.getMessage().split()[:3] for r in middleware_records] == [
-        ["GET", "/missing", "404"]
-    ]

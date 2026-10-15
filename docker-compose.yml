@@ -49,12 +49,13 @@ services:
       migrate:
         condition: service_completed_successfully
     healthcheck:
-      # The slim image has no curl, so the check uses Python's urllib.
+      # uvicorn accepts connections on its port. A plain TCP check needs no
+      # extra endpoint and leaves no lines in the request log.
       test:
         - CMD
         - python
         - -c
-        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"
+        - "import socket; socket.create_connection(('localhost', 8000), 3)"
       interval: 10s
       timeout: 5s
       retries: 3
