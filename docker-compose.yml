@@ -29,7 +29,9 @@ services:
 
   migrate:
     # One-shot job: applies migrations, then exits. The app waits for it.
-    build: .
+    # Reuses the image built for app instead of building its own copy.
+    image: deribit-price-tracker:latest
+    pull_policy: never
     env_file: .env
     command: ["alembic", "upgrade", "head"]
     depends_on:
@@ -39,6 +41,7 @@ services:
 
   app:
     build: .
+    image: deribit-price-tracker:latest
     env_file: .env
     ports:
       - "${APP_PORT:-8000}:8000"
