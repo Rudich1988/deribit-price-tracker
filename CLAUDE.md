@@ -27,6 +27,26 @@ docker compose logs -f app
 docker compose down                              # add -v to drop the database volume
 ```
 
+Compose runs a one-shot `migrate` service (`alembic upgrade head`) before `app` starts.
+
+Migrations (async Alembic, `migrations/`). `env.py` reads `DATABASE_URL` from `Config`, never from `alembic.ini`. From the host, point it at the published port:
+
+```bash
+export DATABASE_URL=postgresql+asyncpg://<user>:<password>@localhost:5433/prices
+poetry run alembic revision --autogenerate -m "describe change"   # ruff runs on the new file
+poetry run alembic upgrade head
+poetry run alembic check                         # models and DB schema in sync?
+```
+
+Every new model module must be imported in `migrations/env.py`, or autogenerate won't see it.
+
+Repository tests need a real Postgres and are **skipped** unless `TEST_DATABASE_URL` is set. They create tables with `metadata.create_all` and truncate them, so use the separate `prices_test` database, never the main one:
+
+```bash
+docker compose exec db psql -U <user> -d prices -c "CREATE DATABASE prices_test"   # once
+TEST_DATABASE_URL=postgresql+asyncpg://<user>:<password>@localhost:5433/prices_test poetry run pytest
+```
+
 Postgres is also published on `127.0.0.1:${POSTGRES_HOST_PORT:-5433}` for running migrations and DB tests from the host. Port 5432 is taken by a local Postgres. In `.env` the `DATABASE_URL` host is `db` (the compose service). From the host, use `localhost:5433` instead.
 
 Ruff is configured in `pyproject.toml` with a **max line length of 80** and rule sets E, W, F, I (import sorting), B, UP.
@@ -44,5 +64,6 @@ The code follows DDD with strictly separated layers (router → service → repo
 - `db/base.py`: `ModelBase` is the declarative base. All ORM models should inherit from it, and future Alembic `env.py` should use `ModelBase.metadata` as `target_metadata`.
 - Errors: raise subclasses of `AppError` (`core/exceptions.py`) from services and clients, never `HTTPException`. `AppErrorHandler` (`core/handlers.py`) maps them to HTTP codes via its `_status_codes`. Add new mappings there. Unmapped `AppError`s and any other exception become a generic 500 with the traceback logged (`UnhandledErrorMiddleware`). `RequestLoggingMiddleware` is added last, so it is outermost and logs the final status.
 - `core/http_client.py`: `BaseHTTPClient` is the base for external API clients (subclass it, call `self._get_json(path, params)`). Use it as `async with`: it owns one `ClientSession` with connection pool limits, timeouts and retries (tenacity, only on `ExternalServiceUnavailableError`: network errors, timeouts, 429/502/503/504). It raises only our `AppError` subclasses, never aiohttp errors, and parses JSON floats as `Decimal`. Override `_raise_for_status(status, payload)` to decode API-specific error bodies. Settings come from `HTTPClientConfig` (`config/http_client.py`), available as `Config.http_client` (`HTTP_TIMEOUT`, `HTTP_CONNECT_TIMEOUT`, `HTTP_RETRY_ATTEMPTS`).
+- `prices` domain storage: `Price` model (`ticker`, `price` Numeric(20,8), `timestamp` BigInteger UNIX seconds, index on `(ticker, timestamp)`). `PriceRepository` has `add_one`, `get_all`, `get_latest` (None if empty) and `get_by_period(PricePeriodDTO)`, where the period is half-open `start <= timestamp < end`. `PriceService` raises `NotFoundError` when there is no latest price. `ModelBase.metadata` has a naming convention, so constraint names are stable in migrations.
 - `prices/clients.py`: `DeribitClient.get_index_price(ticker)` calls `GET public/get_index_price?index_name=...` and returns `IndexPriceDTO`. Its `timestamp` is the exchange time `usOut // 1_000_000`, with local time as fallback. Deribit returns errors as a JSON-RPC `error` body with HTTP 400. Code `10028` (too_many_requests) is retried, other codes are not. `Ticker` (`prices/dto.py`) is the `StrEnum` of tracked indexes.
 - Tests use `fastapi.testclient.TestClient` (needs `httpx2`, not `httpx`). Build the app through `create_app()` with `DATABASE_URL` set via `monkeypatch`. The lifespan does not run without `with TestClient(...)`, so no database is needed. pytest runs with `asyncio_mode = "auto"`, so async tests need no marker. HTTP clients are tested against a real local server: fixtures `fake_api` / `fake_api_url` / `http_config` in `tests/conftest.py`, with scripted `FakeResponse`s from `tests/fakes.py`. Override `_retry_wait()` to return `wait_none()` in tests. aioresponses is not used because it is incompatible with aiohttp 3.14.

@@ -31,6 +31,8 @@ WORKDIR /app
 
 COPY --from=builder /app/.venv ./.venv
 COPY src ./src
+COPY alembic.ini ./
+COPY migrations ./migrations
 
 USER app
 

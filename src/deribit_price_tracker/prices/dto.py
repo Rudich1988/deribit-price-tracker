@@ -15,3 +15,20 @@ class IndexPriceDTO:
     ticker: Ticker
     price: Decimal
     timestamp: int  # UNIX time, seconds
+
+
+@dataclass(frozen=True)
+class PriceDTO:
+    id: int
+    ticker: Ticker
+    price: Decimal
+    timestamp: int  # UNIX time, seconds
+
+
+@dataclass(frozen=True)
+class PricePeriodDTO:
+    """Prices of a ticker with start <= timestamp < end (UNIX seconds)."""
+
+    ticker: Ticker
+    start: int
+    end: int

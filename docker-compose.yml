@@ -27,14 +27,24 @@ services:
       retries: 10
     restart: unless-stopped
 
+  migrate:
+    # One-shot job: applies migrations, then exits. The app waits for it.
+    build: .
+    env_file: .env
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
   app:
     build: .
     env_file: .env
     ports:
       - "${APP_PORT:-8000}:8000"
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
 
 volumes:
