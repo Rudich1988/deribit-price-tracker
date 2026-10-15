@@ -3,6 +3,8 @@ from dataclasses import dataclass
 
 from dotenv import load_dotenv
 
+from deribit_price_tracker.config.http_client import HTTPClientConfig
+
 
 @dataclass(frozen=True)
 class Config:
@@ -11,6 +13,7 @@ class Config:
     deribit_base_url: str
     debug: bool
     log_level: str
+    http_client: HTTPClientConfig
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -23,4 +26,5 @@ class Config:
             ),
             debug=os.getenv("DEBUG", "false").lower() in ("1", "true", "yes"),
             log_level=os.getenv("LOG_LEVEL", "INFO").upper(),
+            http_client=HTTPClientConfig.from_env(),
         )

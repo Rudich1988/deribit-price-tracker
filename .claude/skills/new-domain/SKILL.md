@@ -17,8 +17,8 @@ Domain: `$ARGUMENTS`. If it is empty, infer the name from the request
    2. `dto.py`: input and output dataclasses.
    3. `repositories.py`: subclass of `SQLAlchemyRepository` with `model`,
       the needed methods, and `_to_dto`.
-   4. `clients.py` (only if an external API is involved): client taking an
-      `aiohttp.ClientSession` in `__init__`.
+   4. `clients.py` (only if an external API is involved): subclass of
+      `BaseHTTPClient`.
    5. `services.py`: service taking the repository (and client) in
       `__init__`.
    6. `schemas.py`: pydantic request/response models.

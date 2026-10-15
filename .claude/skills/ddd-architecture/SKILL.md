@@ -67,10 +67,16 @@ Keep endpoints minimal: no business logic, no queries. The flow is always:
 ### External API clients (`clients.py`)
 - One class per external API (e.g. `DeribitClient`). It is infrastructure,
   like a repository: it only talks to the API and returns DTOs.
-- Receives an `aiohttp.ClientSession` and the base URL (from `Config`) in
-  `__init__`. Never creates a session per request. One session is reused for
-  the whole lifecycle: the app lifespan, or one Celery task run (a session is
-  bound to its event loop, and each task run gets a new loop).
+- Subclasses `BaseHTTPClient` (`deribit_price_tracker.core.http_client`),
+  gets the base URL and `config.http_client` in `__init__`, and makes requests
+  only through `self._get_json(...)`. Never import aiohttp in a client: the
+  base class owns the session, timeouts, retries and error mapping.
+- Used as `async with Client(...) as client:`. One session is reused for the
+  whole block: the app lifespan, or one Celery task run (a session is bound
+  to its event loop, and each task run gets a new loop).
+- Override `_raise_for_status(status, payload)` to turn API error bodies into
+  `ExternalServiceError` (permanent) or `ExternalServiceUnavailableError`
+  (retried).
 - Endpoint paths and similar service values are class attributes of the
   client.
 
@@ -108,7 +114,7 @@ Absence of global variables is an evaluation criterion of the task. Be strict.
 | routers      | schemas, dto, services, repositories, `DatabaseDep` |
 | services     | dto, repositories, clients (for type hints)        |
 | repositories | dto, models, `SQLAlchemyRepository`, sqlalchemy    |
-| clients      | dto, aiohttp                                       |
+| clients      | dto, `BaseHTTPClient`, core exceptions             |
 | schemas      | pydantic, enums from dto                           |
 | dto          | stdlib only                                        |
 | models       | `ModelBase`, sqlalchemy                            |
@@ -126,5 +132,5 @@ For a full endpoint traced through every layer, see
 - [ ] No `commit()` in repositories.
 - [ ] Endpoints use `DatabaseDep`, not `Request`.
 - [ ] No module-level variables or constants (declarations only).
-- [ ] `aiohttp.ClientSession` is created once and passed into the client.
+- [ ] Clients subclass `BaseHTTPClient` and are used via `async with`.
 - [ ] Lines ≤ 80 chars: `poetry run ruff check . && poetry run ruff format .`
