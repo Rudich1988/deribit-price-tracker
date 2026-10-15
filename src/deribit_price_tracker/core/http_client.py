@@ -95,7 +95,9 @@ class BaseHTTPClient:
             ) from exc
 
         duration_ms = (time.perf_counter() - started_at) * 1000
-        self._logger.info("GET %s %d %.1fms", url, status, duration_ms)
+        self._logger.info(
+            "GET %s %s %d %.1fms", url, params or {}, status, duration_ms
+        )
 
         self._raise_for_status(status, payload)
         if payload is None:
