@@ -11,6 +11,7 @@ from deribit_price_tracker.core.middlewares import (
     UnhandledErrorMiddleware,
 )
 from deribit_price_tracker.db.database import Database
+from deribit_price_tracker.prices.routers import router as prices_router
 
 
 def create_app() -> FastAPI:
@@ -30,5 +31,6 @@ def create_app() -> FastAPI:
     # status, including the 500 produced by UnhandledErrorMiddleware.
     app.add_middleware(UnhandledErrorMiddleware)
     app.add_middleware(RequestLoggingMiddleware)
+    app.include_router(prices_router)
 
     return app

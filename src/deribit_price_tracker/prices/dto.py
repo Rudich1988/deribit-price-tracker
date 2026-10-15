@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 from enum import StrEnum
 
@@ -27,8 +28,20 @@ class PriceDTO:
 
 @dataclass(frozen=True)
 class PricePeriodDTO:
-    """Prices of a ticker with start <= timestamp < end (UNIX seconds)."""
+    """Prices of a ticker with start <= timestamp < end (UNIX seconds).
+
+    A bound set to None is not applied.
+    """
 
     ticker: Ticker
-    start: int
-    end: int
+    start: int | None = None
+    end: int | None = None
+
+
+@dataclass(frozen=True)
+class PriceDateFilterDTO:
+    """Prices of a ticker between two calendar dates (UTC), inclusive."""
+
+    ticker: Ticker
+    date_from: date | None = None
+    date_to: date | None = None

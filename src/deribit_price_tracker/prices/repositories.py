@@ -42,15 +42,14 @@ class PriceRepository(SQLAlchemyRepository):
         return self._to_dto(price) if price is not None else None
 
     async def get_by_period(self, period: PricePeriodDTO) -> list[PriceDTO]:
-        query = (
-            select(self.model)
-            .where(
-                self.model.ticker == period.ticker.value,
-                self.model.timestamp >= period.start,
-                self.model.timestamp < period.end,
-            )
-            .order_by(self.model.timestamp, self.model.id)
+        query = select(self.model).where(
+            self.model.ticker == period.ticker.value
         )
+        if period.start is not None:
+            query = query.where(self.model.timestamp >= period.start)
+        if period.end is not None:
+            query = query.where(self.model.timestamp < period.end)
+        query = query.order_by(self.model.timestamp, self.model.id)
         return [self._to_dto(price) for price in await self._scalars(query)]
 
     async def _scalars(self, query) -> list[Price]:

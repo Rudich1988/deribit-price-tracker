@@ -1,11 +1,13 @@
 import asyncio
 import logging
 from collections.abc import Iterable
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Protocol
 
 from deribit_price_tracker.core.exceptions import AppError, NotFoundError
 from deribit_price_tracker.prices.dto import (
     IndexPriceDTO,
+    PriceDateFilterDTO,
     PriceDTO,
     PricePeriodDTO,
     Ticker,
@@ -31,6 +33,25 @@ class PriceService:
 
     async def get_by_period(self, period: PricePeriodDTO) -> list[PriceDTO]:
         return await self._repository.get_by_period(period)
+
+    async def get_by_dates(
+        self, date_filter: PriceDateFilterDTO
+    ) -> list[PriceDTO]:
+        """Prices from the start of date_from to the end of date_to, UTC."""
+        period = PricePeriodDTO(
+            ticker=date_filter.ticker,
+            start=self._day_start(date_filter.date_from),
+            end=self._day_start(self._next_day(date_filter.date_to)),
+        )
+        return await self._repository.get_by_period(period)
+
+    def _day_start(self, day: date | None) -> int | None:
+        if day is None:
+            return None
+        return int(datetime.combine(day, time.min, tzinfo=UTC).timestamp())
+
+    def _next_day(self, day: date | None) -> date | None:
+        return day + timedelta(days=1) if day is not None else None
 
 
 class PriceSource(Protocol):

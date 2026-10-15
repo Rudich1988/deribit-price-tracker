@@ -57,6 +57,7 @@ class FakePriceRepository:
 
     def __init__(self, prices: list[PriceDTO] | None = None) -> None:
         self.prices = prices or []
+        self.requested_periods: list[PricePeriodDTO] = []
 
     async def add_one(self, data: IndexPriceDTO) -> PriceDTO:
         saved = PriceDTO(id=len(self.prices) + 1, **vars(data))
@@ -71,8 +72,10 @@ class FakePriceRepository:
         return max(prices, key=lambda p: p.timestamp, default=None)
 
     async def get_by_period(self, period: PricePeriodDTO) -> list[PriceDTO]:
+        self.requested_periods.append(period)
         return [
             p
             for p in await self.get_all(period.ticker)
-            if period.start <= p.timestamp < period.end
+            if (period.start is None or p.timestamp >= period.start)
+            and (period.end is None or p.timestamp < period.end)
         ]

@@ -1,3 +1,4 @@
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 import pytest
@@ -5,6 +6,7 @@ import pytest
 from deribit_price_tracker.core.exceptions import NotFoundError
 from deribit_price_tracker.prices.dto import (
     IndexPriceDTO,
+    PriceDateFilterDTO,
     PriceDTO,
     PricePeriodDTO,
     Ticker,
@@ -72,3 +74,45 @@ async def test_get_by_period_delegates_to_repository() -> None:
     result = await service.get_by_period(period)
 
     assert [p.id for p in result] == [2]
+
+
+def utc_timestamp(*args: int) -> int:
+    return int(datetime(*args, tzinfo=UTC).timestamp())
+
+
+@pytest.mark.parametrize(
+    ("date_from", "date_to", "start", "end"),
+    [
+        (
+            date(2026, 10, 15),
+            date(2026, 10, 15),
+            utc_timestamp(2026, 10, 15),
+            utc_timestamp(2026, 10, 16),
+        ),
+        (
+            date(2026, 10, 1),
+            date(2026, 10, 31),
+            utc_timestamp(2026, 10, 1),
+            utc_timestamp(2026, 11, 1),
+        ),
+        (date(2026, 10, 15), None, utc_timestamp(2026, 10, 15), None),
+        (None, date(2026, 10, 15), None, utc_timestamp(2026, 10, 16)),
+        (None, None, None, None),
+    ],
+)
+async def test_get_by_dates_turns_dates_into_utc_period(
+    date_from: date | None,
+    date_to: date | None,
+    start: int | None,
+    end: int | None,
+) -> None:
+    repository = FakePriceRepository()
+    service = PriceService(repository)
+
+    await service.get_by_dates(
+        PriceDateFilterDTO(Ticker.BTC_USD, date_from, date_to)
+    )
+
+    assert repository.requested_periods == [
+        PricePeriodDTO(Ticker.BTC_USD, start=start, end=end)
+    ]
