@@ -48,6 +48,17 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+    healthcheck:
+      # The slim image has no curl, so the check uses Python's urllib.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   worker:
@@ -72,6 +83,15 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
+    healthcheck:
+      # Asks this worker (celery@<container hostname>) to reply via Redis.
+      test:
+        - CMD-SHELL
+        - python -m deribit_price_tracker.worker inspect ping --destination "celery@$$HOSTNAME" --timeout 5
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
 volumes:

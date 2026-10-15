@@ -23,12 +23,12 @@ poetry run ruff format .                         # format
 Docker (`Dockerfile` + `docker-compose.yml`, secrets only from `.env`):
 
 ```bash
-docker compose up -d --build                     # db, redis, migrate, app on :8000, worker
+docker compose up -d --build --wait              # db, redis, migrate, app on :8000, worker
 docker compose logs -f app
 docker compose down                              # add -v to drop the database volume
 ```
 
-Compose runs a one-shot `migrate` service (`alembic upgrade head`) before `app` starts.
+Compose runs a one-shot `migrate` service (`alembic upgrade head`) before `app` starts. app, migrate and worker share the image `deribit-price-tracker:latest`, built only by `app`. Every long-running service has a healthcheck: app polls `GET /health` (python urllib, there is no curl in the slim image), worker runs `inspect ping` against itself. `--wait` blocks until all are healthy. `/health` is excluded from request logging, and uvicorn runs with `--no-access-log`, because `RequestLoggingMiddleware` already logs every request.
 
 Migrations (async Alembic, `migrations/`). `env.py` reads `DATABASE_URL` from `Config`, never from `alembic.ini`. From the host, point it at the published port:
 

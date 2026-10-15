@@ -38,5 +38,7 @@ USER app
 
 EXPOSE 8000
 
+# Requests are logged by RequestLoggingMiddleware, so uvicorn's own access
+# log would only duplicate every line.
 CMD ["uvicorn", "deribit_price_tracker.app:create_app", "--factory", \
-     "--host", "0.0.0.0", "--port", "8000"]
+     "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
