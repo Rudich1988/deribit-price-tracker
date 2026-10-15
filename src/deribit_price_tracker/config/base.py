@@ -10,6 +10,7 @@ class Config:
     redis_url: str
     deribit_base_url: str
     debug: bool
+    log_level: str
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -21,4 +22,5 @@ class Config:
                 "DERIBIT_BASE_URL", "https://www.deribit.com/api/v2"
             ),
             debug=os.getenv("DEBUG", "false").lower() in ("1", "true", "yes"),
+            log_level=os.getenv("LOG_LEVEL", "INFO").upper(),
         )

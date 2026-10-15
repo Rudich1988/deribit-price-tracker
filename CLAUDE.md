@@ -23,7 +23,7 @@ Ruff is configured in `pyproject.toml` with a **max line length of 80** and rule
 
 ## Configuration
 
-`Config.from_env()` (`config/base.py`) calls `load_dotenv()` and reads `.env` (template: `.env.example`). `DATABASE_URL` is required and must use the `postgresql+asyncpg://` driver. `REDIS_URL` and `DERIBIT_BASE_URL` have defaults. `DEBUG` (`1`/`true`/`yes`, default false) becomes `Config.debug` and is passed as `echo` to `Database`, which turns on SQL logging. The default hostnames (`db`, `redis`) assume Docker Compose service names. No compose file exists yet, so for local runs point them at `localhost`.
+`Config.from_env()` (`config/base.py`) calls `load_dotenv()` and reads `.env` (template: `.env.example`). `DATABASE_URL` is required and must use the `postgresql+asyncpg://` driver. `REDIS_URL` and `DERIBIT_BASE_URL` have defaults. `DEBUG` (`1`/`true`/`yes`, default false) becomes `Config.debug` and is passed as `echo` to `Database`, which turns on SQL logging. `LOG_LEVEL` (default `INFO`) sets the root log level in `setup_logging()` (`core/logging.py`), which `create_app()` calls first. The default hostnames (`db`, `redis`) assume Docker Compose service names. No compose file exists yet, so for local runs point them at `localhost`.
 
 ## Architecture
 

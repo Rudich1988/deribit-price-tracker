@@ -92,6 +92,9 @@ Absence of global variables is an evaluation criterion of the task. Be strict.
   validates the `ticker` query parameter.
 - Settings (URLs, intervals, timeouts) come from `Config` (env).
 - Service values live as class attributes of the class that needs them.
+- Loggers are class attributes too: `_logger = logging.getLogger(__name__)`
+  in the class body, never a module-level `logger`. Logging is configured
+  once by `setup_logging(config)` (`core/logging.py`).
 - Allowed at module level: declarations only — classes, functions, enums,
   ORM models, `router = APIRouter(...)`.
 - The Celery app is built by a factory as well. The way it is exposed to
